@@ -2,18 +2,20 @@ var ImageResizer = require("./ImageResizer");
 var ImageReducer = require("./ImageReducer");
 var S3           = require("./S3");
 var Promise      = require("es6-promise").Promise;
+var https = require('https');
+var ImageData = require("./ImageData");
 
 /**
  * Image processor
- * management resize/reduce image list by configration,
+ * management resize/reduce image list by configuration,
  * and pipe AWS Lambda's event/context
  *
  * @constructor
  * @param Object s3Object
  * @param Object context
  */
-function ImageProcessor(s3Object) {
-    this.s3Object = s3Object;
+function ImageProcessor(snsEvent) {
+    this.snsEvent = snsEvent;
 }
 
 /**
@@ -24,38 +26,45 @@ function ImageProcessor(s3Object) {
  */
 ImageProcessor.prototype.run = function ImageProcessor_run(config) {
     return new Promise(function(resolve, reject) {
-        // If object.size equals 0, stop process
-        if ( this.s3Object.object.size === 0 ) {
-            reject("Object size equal zero. Nothing to process.");
-            return;
-        }
 
-        if ( ! config.get("bucket") ) {
-            config.set("bucket", this.s3Object.bucket.name);
-        }
-
-        S3.getObject(
-            this.s3Object.bucket.name,
-            unescape(this.s3Object.object.key.replace(/\+/g, ' '))
-        )
-        .then(function(imageData) {
-            this.processImage(imageData, config)
-            .then(function(results) {
-                S3.putObjects(results)
-                .then(function(images) {
-                    resolve(images);
-                })
-                .catch(function(messages) {
-                    reject(messages);
-                });
-            })
-            .catch(function(messages) {
-                reject(messages);
+        var file = '';
+        var imageData = false;
+        var self = this;
+        https.get(this.snsEvent.MessageAttributes.DownloadUrl.Value, function (response) {
+            response.on('data', function(chunk) {
+                file += chunk;
             });
-        }.bind(this))
-        .catch(function(error) {
-            reject(error);
+            response.on('end', function() {
+                // prints the full file
+                console.log('filestop');
+                imageData = new ImageData('', '', file, '', '');
+                self.processImage(imageData, config)
+                    .then(function(results) {
+                        S3.putObjects(results)
+                            .then(function(images) {
+                                resolve(images);
+                            })
+                            .catch(function(messages) {
+                                reject(messages);
+                            });
+                    })
+                    .catch(function(messages) {
+                        reject(messages);
+                    });
+                //resolve(new ImageData('', '', file, '', ''));
+            });
+/*
+            if (!error && response.statusCode == 200) {
+                resolve(new ImageData('', '', body, '', ''));
+            }
+            else
+            {
+                reject('Not 200 '+error);
+            }*/
         });
+
+        console.log('httpstop');
+
     }.bind(this));
 };
 
