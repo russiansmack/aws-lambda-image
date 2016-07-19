@@ -2,7 +2,8 @@ var ImageResizer = require("./ImageResizer");
 var ImageReducer = require("./ImageReducer");
 var S3           = require("./S3");
 var Promise      = require("es6-promise").Promise;
-var https = require('https');
+var request = require('request').defaults({ encoding: null });
+
 var ImageData = require("./ImageData");
 
 /**
@@ -27,17 +28,12 @@ function ImageProcessor(snsEvent) {
 ImageProcessor.prototype.run = function ImageProcessor_run(config) {
     return new Promise(function(resolve, reject) {
 
-        var file = '';
         var imageData = false;
         var self = this;
-        https.get(this.snsEvent.MessageAttributes.DownloadUrl.Value, function (response) {
-            response.on('data', function(chunk) {
-                file += chunk;
-            });
-            response.on('end', function() {
+        request.get(this.snsEvent.MessageAttributes.DownloadUrl.Value, function (err, res, body) {
                 // prints the full file
                 console.log('filestop');
-                imageData = new ImageData('', '', file, '', '');
+                imageData = new ImageData(self.snsEvent.MessageAttributes.Destination.Value, '', body, '', '');
                 self.processImage(imageData, config)
                     .then(function(results) {
                         S3.putObjects(results)
@@ -52,7 +48,6 @@ ImageProcessor.prototype.run = function ImageProcessor_run(config) {
                         reject(messages);
                     });
                 //resolve(new ImageData('', '', file, '', ''));
-            });
 /*
             if (!error && response.statusCode == 200) {
                 resolve(new ImageData('', '', body, '', ''));
