@@ -7,8 +7,6 @@ lambda:
 	@cp index.js build/index.js
 	@if [ -d build/node_modules ] ;then rm -rf build/node_modules; fi
 	@cp -R node_modules build/node_modules
-	@cp -R libs build/
-	@cp -R bin build/
 	@echo "Create package archive..."
 	@cd build && zip -rq aws-sns-lambda-imageprocessing.zip .
 	@mv build/aws-sns-lambda-imageprocessing.zip ./
