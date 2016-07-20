@@ -1,9 +1,9 @@
+var path        = require("path");
 var request     = require('request').defaults({ encoding: null });
-var S3          = require("./libs/S3");
 var ImageMagick = require("imagemagick");
 var aws         = require("aws-sdk");
 var client      = new aws.S3({apiVersion: "2006-03-01"});
-var path        = require("path");
+var S3          = require("./libs/S3");
 
 exports.handler = function(event, context) {
 
@@ -33,7 +33,6 @@ exports.handler = function(event, context) {
             }
             else
             {
-
                 var params = {
                     Bucket: bucketName + bucketPath,
                     Key: fileName,
@@ -55,5 +54,4 @@ exports.handler = function(event, context) {
         });
 
     });
-
 };
