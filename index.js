@@ -16,8 +16,12 @@ exports.handler = function(event, context) {
 
     request.get(downloadFromUrl, function (err, res, file)
     {
+        var imagetype = path.extname(downloadFromUrl).slice(1).toLowerCase();
+
         var paramsIM = {
-            srcData:   file.toString("binary"),
+            srcData:   file,
+            srcFormat: imagetype,
+            format:    imagetype,
             width:     size
         };
 
